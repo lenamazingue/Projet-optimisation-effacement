@@ -23,8 +23,7 @@ for i in range(N+1):
     elif 6.5<=t%24<=11.5 or 14.5<=t%24<=23.5 :
         Cout.append(c_pl)
     if 7<=t%24<=9 or 18<=t%24<=23:
-        i_occur.append(i)
-    print(t%24)    
+        i_occur.append(i)    
     t+=dt
     
 
@@ -32,7 +31,7 @@ for i in range(N+1):
 
 # +
 c_cr = 1
-c_pl = 7/4
+c_pl = 3/2
 Cout =[]
 dt = 0.5
 N = int(24/dt)
@@ -46,9 +45,9 @@ for i in range(N+1):
     elif 6.5<=t%24<=11.5 or 14.5<=t%24<=23.5 :
         Cout.append(c_pl)
     if 7<=t%24<=9 or 18<=t%24<=23:
-        i_occur.append(i)
-    print(t%24)    
-    t+=dt
+        i_occur.append(i)    
+    t += dt
+    
 def solve_effacement():
 
     T_m = 18 # en degré celcius
@@ -140,21 +139,32 @@ def solve_effacement():
 
 
 sol_temp = solve_effacement()
+temps_heures = np.arange(N+1) * dt # pour avoir le temps en heure
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12,5))  
 fig.subplots_adjust(wspace=0.3)  
-axs[0].plot(np.array(sol_temp['P']).flatten())
-axs[1].plot(np.array(sol_temp['T']).flatten())
+axs[0].plot(temps_heures,np.array(sol_temp['P']).flatten())
+axs[1].plot(temps_heures,np.array(sol_temp['T']).flatten())
 axs[0].set_ylabel("Puissance")
+axs[0].set_xlabel("Temps en heures")
 #axs[1].plot(sol_temp['T'].T)
 axs[1].set_ylabel("Tempérarure batiment")
+axs[1].set_xlabel("Temps en heures")
 
 plt.show()
-# -
 
+# +
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12,5))  
 fig.subplots_adjust(wspace=0.3)  
-axs[0].plot(np.array(sol_temp['P']).flatten(), label = "Puissance")
-axs[1].plot(Cout, label = "Cout")
+axs[0].plot(temps_heures,np.array(sol_temp['P']).flatten(), label = "Puissance")
+axs[0].set_ylabel("Puissance")
+axs[0].set_xlabel("Temps en heures")
+
+
+axs[1].plot(temps_heures,Cout, label = "Cout")
+axs[1].set_ylabel("Cout ")
+axs[1].set_xlabel("Temps en heures")
+
+
 plt.show()
 
 # +
@@ -269,8 +279,16 @@ def solve_effacement():
 sol_temp = solve_effacement()
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12,5))  
 fig.subplots_adjust(wspace=0.3)  
-axs[0].plot(np.array(sol_temp['P']).flatten(), label = "Puissance")
-axs[1].plot(Cout, label = "Cout")
+axs[0].plot(temps_heures,np.array(sol_temp['P']).flatten(), label = "Puissance")
+axs[1].plot(temps_heures,Cout, label = "Cout")
+axs[0].set_ylabel("Puissance")
+axs[0].set_xlabel("Temps en heures")
+axs[1].set_ylabel("Cout en heures")
+axs[1].set_xlabel("Temps en heures")
+
+
+
+
 fig.suptitle(" Cas cpl=7/4")
 
 plt.show()
@@ -339,6 +357,7 @@ def solve_effacement():
     # Objective
     
     cost = dt*ca.dot(Cout,P)
+    
 
     g = []
     lbg = []
@@ -387,8 +406,12 @@ def solve_effacement():
 sol_temp = solve_effacement()
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12,5))  
 fig.subplots_adjust(wspace=0.3)  
-axs[0].plot(np.array(sol_temp['P']).flatten(), label = "Puissance")
-axs[1].plot(Cout, label = "Cout")
+axs[0].plot(temps_heures,np.array(sol_temp['P']).flatten(), label = "Puissance")
+axs[1].plot(temps_heures,Cout, label = "Cout")
+axs[0].set_ylabel("Puissance")
+axs[0].set_xlabel("Temps en heures")
+axs[1].set_ylabel("Cout en heures")
+axs[1].set_xlabel("Temps en heures")
 fig.suptitle(" Cas cpl=2")
 
 plt.show()
@@ -412,20 +435,17 @@ t = 23
 nl = 2
 temps = [] #que les horaires de présences
 i_occur = [] # pour prendre en compte 
-for n in range(nl):
-    if n ==0:
-        for i in range(N+1):
-            temps.append(t%24)    
-        if 7<=t%24<=9 or 18<=t%24<=23:
-            i_occur.append(i)
-            
+
+for i in range(N+1):
+    temps.append(t%24)
     if 0<= t%24 <=6 or 12<= t%24<=14: 
         Cout.append(c_cr)
     elif 6.5<=t%24<=11.5 or 14.5<=t%24<=23.5 :
         Cout.append(c_pl)
-
-    if n==0: # pour construire la liste comme on le veut
-        t+=dt
+    if 7<=t%24<=9 or 18<=t%24<=23:
+        i_occur.append(i)    
+    t+=dt
+    
     
 def solve_effacement_bis():
 
@@ -473,15 +493,14 @@ def solve_effacement_bis():
 
 
     x = ca.vertcat(
-        ca.reshape(P, N+1, nl),
-        ca.reshape(T, N+1, nl),
+        ca.reshape(P, (N+1)*nl,1),
+        ca.reshape(T, (N+1)*nl, 1),
     )
 
-    # Objective
+    C = ca.DM(Cout)  # vecteur (N+1,)
+    cost = ca.dot(C, P[:N+1,0]) + ca.dot(C, P[:N+1,1])
     
-    cost = dt*ca.dot(Cout,P)
-
-    g = []
+    g=[]
     lbg = []
     ubg = []
 
@@ -499,8 +518,8 @@ def solve_effacement_bis():
             ubg.append(0.0)
 
     # Constraint 2: température initiale et puissance terminale
-    g.append(T[0])
-    g.append(T[0])
+    g.append(T[0,0])
+    g.append(T[0,1])
     lbg.append(T_m1)
     ubg.append(T_m1)
     lbg.append(T_m2)
@@ -519,30 +538,54 @@ def solve_effacement_bis():
 
     lp =  {'x': x, 'f': cost, 'g': g}
     solver = ca.qpsol('s', 'highs', lp)
-
+    
+    # On va chercher à initialiser au mieux nos variables
+    
+    x0 = ca.DM.ones(nvar)   
     sol =  solver(
-        x0 = np.ones(nvar),
+        x0 = x0,
         lbx= lbx,
         ubx= ubx,
         lbg= lbg,
         ubg= ubg,
     )
 
-    P = sol['x'][:N+1]
-    T = sol['x'][N+1:]
+    P = sol['x'][:(N+1)*nl]
+    T = sol['x'][(N+1)*nl:]
+
 
     return {
-        'P' : ca.reshape(P, N+1,1),
-        'T' : ca.reshape(T, N+1 ,1),
+        'P' : ca.reshape(P, N+1, nl),
+        'T' : ca.reshape(T, N+1, nl),
+        
     }
 
 
-sol_temp = solve_effacement_bis()
-fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12,5))  
-fig.subplots_adjust(wspace=0.3)  
-axs[0].plot(np.array(sol_temp['P']).flatten(), label = "Puissance")
-axs[1].plot(Cout, label = "Cout")
-fig.suptitle(" Cas cpl=7/4")
+sol_temp_bis = solve_effacement_bis()
+P_np = sol_temp_bis["P"]
+T_np = sol_temp_bis["T"]
+
+fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(12,6))
+
+# Puissance
+axs[0,0].plot(temps_heures, P_np[:,0], label="Maison 1")
+axs[0,0].plot(temps_heures, P_np[:,1], label="Maison 2")
+axs[0,0].set_ylabel("Puissance (W)")
+axs[0,0].legend()
+
+# Coût
+axs[0,1].plot(temps_heures, Cout)
+axs[0,1].set_ylabel("Cout")
+
+# Température
+axs[1,0].plot(temps_heures, T_np[:,0], label="Maison 1")
+axs[1,0].plot(temps_heures, T_np[:,1], label="Maison 2")
+axs[1,0].set_ylabel("Température (°C)")
+axs[1,0].legend()
+
+
+axs[1,1].plot(temps_heures, Cout)
+axs[1,1].set_ylabel("Cout")
 
 plt.show()
 # -
